@@ -1,4 +1,4 @@
-import { copyFile, existsSync } from "fs";
+import fs, { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -12,7 +12,7 @@ const rename = async () => {
     throw new Error('FS operation failed');
   }
 
-  copyFile(sourceFile, targetFile, (err) => {
+  fs.rename(sourceFile, targetFile, (err) => {
     if (err) throw err;
     console.log('Renamed');
   })
