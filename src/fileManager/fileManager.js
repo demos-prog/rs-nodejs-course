@@ -1,4 +1,6 @@
 import path from "path";
+import { pipeline } from 'node:stream/promises';
+import { createGzip, createUnzip } from 'node:zlib';
 import { createHash } from 'crypto';
 import {
   readdirSync,
@@ -47,7 +49,7 @@ stdin.on('data', (data) => {
     });
 
     if (tableData.length === 0) {
-      console.log(`Operation failed\n`);
+      console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
@@ -96,11 +98,81 @@ stdin.on('data', (data) => {
     return;
   }
 
+  // Compress file
+  if (input.startsWith('compress ')) {
+    const args = input.substring(9).trim().split(' ');
+    if (args.length !== 2) {
+      console.log(`Operation failed`);
+      printDirName(__dirname);
+      return;
+    }
+
+    const pathToFile = args[0];
+    const pathToDestination = args[1];
+    const fileName = path.basename(pathToFile).split('.')[0] + '.gz';
+
+    if (!existsSync(pathToFile)) {
+      console.log(`Operation failed`);
+      printDirName(__dirname);
+      return;
+    }
+
+    pipeline(
+      createReadStream(pathToFile),
+      createGzip(),
+      createWriteStream(path.join(pathToDestination, fileName))
+    ).then(() => {
+      console.log('Pipeline succeeded.');
+      printDirName(__dirname);
+      return;
+    }).catch(() => {
+      console.log('Operation failed');
+      printDirName(__dirname);
+      return;
+    });
+    return;
+  }
+
+  // Decompress file
+  if (input.startsWith('decompress ')) {
+    const args = input.substring(11).trim().split(' ');
+    if (args.length !== 2) {
+      console.log(`Operation failed`);
+      printDirName(__dirname);
+      return;
+    }
+
+    const pathToFile = args[0];
+    const pathToDestination = args[1];
+    const fileName = path.basename(pathToFile).split('.')[0] + '.js';
+
+    if (!existsSync(pathToFile)) {
+      console.log(`Operation failed`);
+      printDirName(__dirname);
+      return;
+    }
+
+    pipeline(
+      createReadStream(pathToFile),
+      createUnzip(),
+      createWriteStream(path.join(pathToDestination, fileName))
+    ).then(() => {
+      console.log('Pipeline succeeded.');
+      printDirName(__dirname);
+      return;
+    }).catch(() => {
+      console.log('Operation failed');
+      printDirName(__dirname);
+      return;
+    });
+    return;
+  }
+
   // Calculate hash for file
   if (input.startsWith('hash ')) {
     const pathToFile = input.substring(5);
     if (!existsSync(pathToFile)) {
-      console.log(`Operation failed\n`);
+      console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
@@ -118,7 +190,7 @@ stdin.on('data', (data) => {
       printDirName(__dirname);
       return;
     })
-    
+
     printDirName(__dirname);
     return;
   }
@@ -127,7 +199,7 @@ stdin.on('data', (data) => {
   if (input.startsWith('cp ')) {
     const args = input.substring(3).trim().split(' ');
     if (args.length !== 2) {
-      console.log(`Operation failed\n`);
+      console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
@@ -144,11 +216,11 @@ stdin.on('data', (data) => {
         wStream.end();
       })
       rStream.on('end', () => console.log('copied !\n'));
-      rStream.on('error', () => console.log('Operation failed\n'));
+      rStream.on('error', () => console.log('Operation failed'));
       printDirName(__dirname);
       return;
     } else {
-      console.log(`Operation failed\n`);
+      console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
@@ -158,7 +230,7 @@ stdin.on('data', (data) => {
   if (input.startsWith('mv ')) {
     const args = input.substring(3).trim().split(' ');
     if (args.length !== 2) {
-      console.log(`Operation failed\n`);
+      console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
@@ -175,7 +247,7 @@ stdin.on('data', (data) => {
       });
       return;
     } else {
-      console.log(`Operation failed\n`);
+      console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
@@ -192,7 +264,7 @@ stdin.on('data', (data) => {
         return;
       });
     } else {
-      console.log(`Operation failed\n`);
+      console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
@@ -202,7 +274,7 @@ stdin.on('data', (data) => {
   if (input.startsWith('rn ')) {
     const args = input.substring(3).trim().split(' ');
     if (args.length !== 2) {
-      console.log(`Operation failed\n`);
+      console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
@@ -268,7 +340,7 @@ stdin.on('data', (data) => {
 
       return;
     } else {
-      console.log(`Operation failed\n`);
+      console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
