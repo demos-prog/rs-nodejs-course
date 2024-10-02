@@ -4,10 +4,12 @@ import {
   statSync,
   createReadStream,
   createWriteStream,
-  rename
+  rename,
+  existsSync,
+  unlink
 } from "fs";
 import { fileURLToPath } from 'url';
-import { printDirName, checkExisting } from "./helpers.js";
+import { printDirName } from "./helpers.js";
 
 const { stdin, exit } = process;
 const __filename = fileURLToPath(import.meta.url);
@@ -55,6 +57,86 @@ stdin.on('data', (data) => {
     return;
   }
 
+  // Get EOL
+  if (input === 'os --EOL'){
+    
+  }
+
+  // copiyng file to a new directory
+  if (input.startsWith('cp ')) {
+    const args = input.substring(3).trim().split(' ');
+    if (args.length !== 2) {
+      console.log(`Operation failed\n`);
+      printDirName(__dirname);
+      return;
+    }
+
+    const path_to_file = args[0];
+    const path_to_new_directory = args[1];
+
+    if (existsSync(path_to_file)) {
+      const rStream = createReadStream(path_to_file);
+      const fileName = path.basename(path_to_file);
+      rStream.on('data', (chunk) => {
+        const wStream = createWriteStream(path.join(path_to_new_directory, fileName));
+        wStream.write(chunk);
+        wStream.end();
+      })
+      rStream.on('end', () => console.log('copied !\n'));
+      rStream.on('error', () => console.log('Operation failed\n'));
+      printDirName(__dirname);
+      return;
+    } else {
+      console.log(`Operation failed\n`);
+      printDirName(__dirname);
+      return;
+    }
+  }
+
+  // moving file
+  if (input.startsWith('mv ')) {
+    const args = input.substring(3).trim().split(' ');
+    if (args.length !== 2) {
+      console.log(`Operation failed\n`);
+      printDirName(__dirname);
+      return;
+    }
+
+    const path_to_file = args[0];
+    const path_to_new_directory = args[1];
+
+    if (existsSync(path_to_file)) {
+      const fileName = path.basename(path_to_file);
+      const newFilePath = path.join(path_to_new_directory, fileName);
+      rename(path_to_file, newFilePath, () => {
+        console.log('moved !');
+        printDirName(__dirname);
+      });
+      return;
+    } else {
+      console.log(`Operation failed\n`);
+      printDirName(__dirname);
+      return;
+    }
+  }
+
+  // deleting file
+  if (input.startsWith('rm ')) {
+    const filePath = input.substring(3);
+
+    if (existsSync(filePath)) {
+      unlink(filePath, () => {
+        console.log('deleted !');
+        printDirName(__dirname);
+        return;
+      });
+    } else {
+      console.log(`Operation failed\n`);
+      printDirName(__dirname);
+      return;
+    }
+  }
+
   // renaming
   if (input.startsWith('rn ')) {
     const args = input.substring(3).trim().split(' ');
@@ -68,7 +150,7 @@ stdin.on('data', (data) => {
     const passedFileName = args[1];
     const newFilrName = path.join(__dirname, passedFileName);
 
-    if (checkExisting(passedFilePath)) {
+    if (existsSync(passedFilePath)) {
       rename(passedFilePath, newFilrName, () => {
         console.log('renamed !');
         printDirName(__dirname);
@@ -88,15 +170,15 @@ stdin.on('data', (data) => {
     const fileName = input.substring(4);
     const filePath = path.join(__dirname, fileName);
 
-    if (checkExisting(filePath)) {
-      console.log(`Operation failed\n`);
+    if (existsSync(filePath)) {
+      printDirName(__dirname);
+      return;
+    } else {
+      createWriteStream(filePath);
       printDirName(__dirname);
       return;
     }
 
-    createWriteStream(filePath);
-    printDirName(__dirname);
-    return;
   }
 
   // reading file
@@ -104,7 +186,7 @@ stdin.on('data', (data) => {
     const fileName = input.substring(4);
     const filePath = path.join(__dirname, fileName);
 
-    if (!checkExisting(filePath)) return;
+    if (!existsSync(filePath)) return;
 
     if (statSync(filePath).isFile()) {
       const readStream = createReadStream(filePath, 'utf-8');
@@ -137,10 +219,10 @@ stdin.on('data', (data) => {
     const targetDirectory = path.join(__dirname, newDirectory);
 
     if (path.isAbsolute(newDirectory)) {
-      if (!checkExisting(newDirectory)) return;
+      if (!existsSync(newDirectory)) return;
       __dirname = newDirectory;
     } else {
-      if (!checkExisting(targetDirectory)) return;
+      if (!existsSync(targetDirectory)) return;
       __dirname = targetDirectory;
     }
 
