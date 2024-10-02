@@ -170,7 +170,7 @@ stdin.on('data', (data) => {
 
   // Calculate hash for file
   if (input.startsWith('hash ')) {
-    const pathToFile = input.substring(5);
+    const pathToFile = input.substring(5).trim();
     if (!existsSync(pathToFile)) {
       console.log(`Operation failed`);
       printDirName(__dirname);
@@ -255,7 +255,7 @@ stdin.on('data', (data) => {
 
   // deleting file
   if (input.startsWith('rm ')) {
-    const filePath = input.substring(3);
+    const filePath = input.substring(3).trim();
 
     if (existsSync(filePath)) {
       unlink(filePath, () => {
@@ -300,7 +300,7 @@ stdin.on('data', (data) => {
 
   // adding file
   if (input.startsWith('add ')) {
-    const fileName = input.substring(4);
+    const fileName = input.substring(4).trim();
     const filePath = path.join(__dirname, fileName);
 
     if (existsSync(filePath)) {
@@ -316,7 +316,7 @@ stdin.on('data', (data) => {
 
   // reading file
   if (input.startsWith('cat ')) {
-    const fileName = input.substring(4);
+    const fileName = input.substring(4).trim();
     const filePath = path.join(__dirname, fileName);
 
     if (!existsSync(filePath)) return;
@@ -348,7 +348,7 @@ stdin.on('data', (data) => {
 
   // changing directory
   if (input.startsWith('cd ')) {
-    const newDirectory = input.substring(3);
+    const newDirectory = input.substring(3).trim();
     const targetDirectory = path.join(__dirname, newDirectory);
 
     if (path.isAbsolute(newDirectory)) {
