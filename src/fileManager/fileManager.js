@@ -1,4 +1,5 @@
 import path from "path";
+import { createHash } from 'crypto';
 import {
   readdirSync,
   statSync,
@@ -8,12 +9,11 @@ import {
   existsSync,
   unlink
 } from "fs";
-import { fileURLToPath } from 'url';
+import * as os from "os";
 import { printDirName } from "./helpers.js";
 
 const { stdin, exit } = process;
-const __filename = fileURLToPath(import.meta.url);
-let __dirname = path.dirname(__filename);
+let __dirname = os.homedir();
 const userName = process.env.npm_config_username;
 
 console.log(`Welcome to the File Manager, ${userName}!`);
@@ -58,8 +58,69 @@ stdin.on('data', (data) => {
   }
 
   // Get EOL
-  if (input === 'os --EOL'){
+  if (input === 'os --EOL') {
+    os.EOL === '\n' ? console.log('EOL is LF\n') : console.log('EOL is CRLF\n');
+    printDirName(__dirname);
+    return;
+  }
+
+  // Get CPU architecture
+  if (input === 'os --cpus') {
+    const cpus = os.cpus();
+    console.log(`Overall amount of CPUS: ${cpus.length}`);
+    cpus.forEach((cpu, index) => {
+      console.log(`CPU ${index + 1}: ${cpu.model} (${cpu.speed / 1000} GHz)`);
+    });
+    printDirName(__dirname);
+    return;
+  }
+
+  // Get home directory
+  if (input === 'os --homedir') {
+    console.log(`Home directory: ${os.homedir()}\n`);
+    printDirName(__dirname);
+    return;
+  }
+
+  // Get current system user name
+  if (input === 'os --username') {
+    console.log(`Username: ${os.userInfo().username}`);
+    printDirName(__dirname);
+    return;
+  }
+
+  // Get CPU architecture
+  if (input === 'os --architecture') {
+    console.log(`Architecture: ${os.arch()}`);
+    printDirName(__dirname);
+    return;
+  }
+
+  // Calculate hash for file
+  if (input.startsWith('hash ')) {
+    const pathToFile = input.substring(5);
+    if (!existsSync(pathToFile)) {
+      console.log(`Operation failed\n`);
+      printDirName(__dirname);
+      return;
+    }
+    const rStream = createReadStream(pathToFile);
+    rStream.on('data', (chunk) => {
+      const hash = createHash('sha256');
+      hash.update(chunk);
+      console.log(`Hash: ${hash.digest('hex')}`);
+      printDirName(__dirname);
+      return;
+    });
+
+    rStream.on('error', (err) => {
+      console.error('Error reading file:', err);
+      printDirName(__dirname);
+      return;
+    })
     
+    printDirName(__dirname);
+    return;
   }
 
   // copiyng file to a new directory
