@@ -1,3 +1,3 @@
-# Node.js basics
+# Node.js basics + File Manager
 
 ## Demos-prog repo
