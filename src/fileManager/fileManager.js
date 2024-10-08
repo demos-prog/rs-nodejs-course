@@ -13,6 +13,7 @@ import {
 } from "fs";
 import * as os from "os";
 import { printDirName } from "./helpers.js";
+import { stdout } from "process";
 
 const { stdin, exit } = process;
 let __dirname = os.homedir();
@@ -176,22 +177,24 @@ stdin.on('data', (data) => {
       printDirName(__dirname);
       return;
     }
+
+    const hash = createHash('sha256');
     const rStream = createReadStream(pathToFile);
+
     rStream.on('data', (chunk) => {
-      const hash = createHash('sha256');
       hash.update(chunk);
+    });
+
+    rStream.on('end', () => {
       console.log(`Hash: ${hash.digest('hex')}`);
       printDirName(__dirname);
-      return;
     });
 
     rStream.on('error', (err) => {
       console.error('Error reading file:', err);
       printDirName(__dirname);
-      return;
-    })
+    });
 
-    printDirName(__dirname);
     return;
   }
 
@@ -210,14 +213,25 @@ stdin.on('data', (data) => {
     if (existsSync(path_to_file)) {
       const rStream = createReadStream(path_to_file);
       const fileName = path.basename(path_to_file);
-      rStream.on('data', (chunk) => {
-        const wStream = createWriteStream(path.join(path_to_new_directory, fileName));
-        wStream.write(chunk);
-        wStream.end();
-      })
-      rStream.on('end', () => console.log('copied !\n'));
-      rStream.on('error', () => console.log('Operation failed'));
-      printDirName(__dirname);
+      const wStream = createWriteStream(path.join(path_to_new_directory, fileName));
+
+      rStream.pipe(wStream);
+
+      wStream.on('finish', () => {
+        console.log('File copied successfully.');
+        printDirName(__dirname);
+      });
+
+      wStream.on('error', () => {
+        console.log('Operation failed');
+        printDirName(__dirname);
+      });
+
+      rStream.on('error', () => {
+        console.log('Operation failed');
+        printDirName(__dirname);
+      });
+
       return;
     } else {
       console.log(`Operation failed`);
@@ -241,8 +255,13 @@ stdin.on('data', (data) => {
     if (existsSync(path_to_file)) {
       const fileName = path.basename(path_to_file);
       const newFilePath = path.join(path_to_new_directory, fileName);
-      rename(path_to_file, newFilePath, () => {
-        console.log('moved !');
+
+      rename(path_to_file, newFilePath, (err) => {
+        if (err) {
+          console.log('Operation failed');
+        } else {
+          console.log('File moved successfully!');
+        }
         printDirName(__dirname);
       });
       return;
@@ -258,16 +277,20 @@ stdin.on('data', (data) => {
     const filePath = input.substring(3).trim();
 
     if (existsSync(filePath)) {
-      unlink(filePath, () => {
-        console.log('deleted !');
+      unlink(filePath, (err) => {
+        if (err) {
+          console.log('Operation failed');
+        } else {
+          console.log('File deleted successfully!');
+        }
         printDirName(__dirname);
-        return;
       });
     } else {
       console.log(`Operation failed`);
       printDirName(__dirname);
       return;
     }
+    return;
   }
 
   // renaming
@@ -316,10 +339,13 @@ stdin.on('data', (data) => {
 
   // reading file
   if (input.startsWith('cat ')) {
-    const fileName = input.substring(4).trim();
-    const filePath = path.join(__dirname, fileName);
+    const filePath = input.substring(4).trim();
 
-    if (!existsSync(filePath)) return;
+    if (!existsSync(filePath)) {
+      console.log(`Operation failed`);
+      printDirName(__dirname);
+      return;
+    }
 
     if (statSync(filePath).isFile()) {
       const readStream = createReadStream(filePath, 'utf-8');
