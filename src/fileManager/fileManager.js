@@ -13,7 +13,6 @@ import {
 } from "fs";
 import * as os from "os";
 import { printDirName } from "./helpers.js";
-import { stdout } from "process";
 
 const { stdin, exit } = process;
 let __dirname = os.homedir();
